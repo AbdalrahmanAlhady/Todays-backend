@@ -12,8 +12,9 @@ connectDB();
 
 app.use(express.json());
 app.use(cors());
-app.use("/api/v1/auth", routes.authRouter);
-app.use("/api/v1/posts", auth,routes.postRouter);
+app.use("/api/v1/auth", routes.authRoutes);
+app.use("/api/v1/posts", auth,routes.postRoutes);
+app.use("/api/v1/comments", auth,routes.commentRoutes);
 
 app.listen(PORT, (error) => {
   if (!error) console.log("listening on " + PORT);

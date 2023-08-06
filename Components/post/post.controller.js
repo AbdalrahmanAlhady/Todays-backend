@@ -3,8 +3,8 @@ import APIFeatures from "../../utils/apiFeatures.js";
 
 export const createPost = async (req, res) => {
   try {
-    const { body, userId } = req.body;
-    const post = new Post({ body, owner: userId });
+    const { body, ownerId } = req.body;
+    const post = new Post({ body, owner: ownerId });
     const savedPost = await post.save();
     res.status(201).json({ post: savedPost });
   } catch (error) {
@@ -50,7 +50,6 @@ export const updatePost = async (req, res) => {
     res.status(200).json({ post });
   } catch (error) {
     res.status(400).json({ message: error.message });
-    console.log(error.message);
   }
 };
 

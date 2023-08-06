@@ -9,6 +9,7 @@ class APIFeatures {
       excludedFields.forEach(el => delete queryObj[el])
       let queryStr = JSON.stringify(queryObj)
       queryStr = queryStr.replace(/\b(gte|gt|lte|lt|regex)\b/g, match => `$${match}`)
+      queryStr = queryStr.replace(/\b(ownerId|postId)\b/g, match => match.replace('Id',''));
       this.query = this.query.find(JSON.parse(queryStr))
       return this
     }
