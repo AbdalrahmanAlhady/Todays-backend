@@ -32,6 +32,11 @@ const userSchema = new Schema(
       type: Date,
       required: [true, "birthdate is required"],
     },
+    gender:{
+      type:String,
+      enum:['male','female'],
+      required : [true,"gender is required"]
+    },
     img: {
       type: String,
     },
