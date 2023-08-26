@@ -37,7 +37,7 @@ const userSchema = new Schema(
       enum:['male','female'],
       required : [true,"gender is required"]
     },
-    img: {
+    profileImg: {
       type: String,
     },
     OTP:{

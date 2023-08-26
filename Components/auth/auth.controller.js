@@ -11,6 +11,13 @@ const secret = process.env.SECRET;
 export const signup = async (req, res) => {
   try {
     const userData = req.body;
+    if (await User.find({ email: userData.email })) {
+      res.status(400).json({ message: "this email is already exist" });
+      return;
+    } else if (await User.find({ phone: userData.phone })) {
+      res.status(400).json({ message: "this phone number is already exist" });
+      return;
+    }
     if (userData.password === userData.cPassword) {
       userData.password = await bcrypt.hash(userData.password, 10);
       let newUser = new User(userData);
@@ -38,8 +45,8 @@ export const signin = async (req, res) => {
       } else {
         res.status(400).json({ error: "wrong credientials" });
       }
-    }else{
-      res.status(404).json({ message:"wrong credientials" });
+    } else {
+      res.status(404).json({ message: "wrong credientials" });
     }
   } catch (error) {
     res.status(404).json({ error: error.message });
