@@ -1,50 +1,56 @@
-import mongoose from "mongoose";
-const { Schema } = mongoose;
-const userSchema = new Schema(
+import { sequelizeConnection } from "../connection.js";
+import { DataTypes } from "sequelize";
+import Post from "./post.model.js";
+const User = sequelizeConnection.define(
+  "user",
   {
     first_name: {
-      type: String,
-      required: [true, "firstName is required"],
-      min: [3, "minimum length 3 char"],
-      max: [20, "max length 20 char"],
+      type: DataTypes.STRING,
+      allowNull: false,
+      len: [3,20]
     },
     last_name: {
-      type: String,
-      min: [3, "minimum length 3 char"],
-      max: [20, "max length 20 char"],
+      type: DataTypes.STRING,
+      allowNull: false,
+      len: [3,20]
     },
     phone: {
-      type: String,
-      required: [true, "phone is required"],
-      unique: [true, "phone must be unique value"],
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+
     },
     email: {
-      type: String,
-      unique: [true, "email must be unique value"],
-      required: [true, "userName is required"],
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+      isEmail: true
     },
     password: {
-      type: String,
-      required: [true, "password is required"],
-      min: [10, "minimum length 10 char for password"],
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
     },
     birthdate: {
-      type: Date,
-      required: [true, "birthdate is required"],
+      type: DataTypes.DATE,
+      allowNull: false,
     },
-    gender:{
-      type:String,
-      enum:['male','female'],
-      required : [true,"gender is required"]
+    gender: {
+      type: DataTypes.ENUM("male", "female"),
+      allowNull: false,
     },
     profileImg: {
-      type: String,
+      type: DataTypes.STRING,
+      allowNull: true,
     },
-    OTP:{
-      type:String
-    }
+    OTP: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
   },
-  { timestamps: true }
+  {
+    freezeTableName: true,
+  }
 );
-const User = mongoose.model("User", userSchema);
+
 export default User;

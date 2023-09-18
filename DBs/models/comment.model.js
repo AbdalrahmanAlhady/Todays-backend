@@ -1,24 +1,17 @@
-import mongoose from "mongoose";
-const { Schema } = mongoose;
-const commentSchema = new Schema(
+import { sequelizeConnection } from "../connection.js";
+import { DataTypes } from "sequelize";
+
+const Comment = sequelizeConnection.define(
+  "comment",
   {
     body: {
-      type: String,
-      min: [true, "can't create empty comment "],
-      required: true,
-    },
-    owner: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: [true, "invaild user id "],
-    },
-    post: {
-      type: Schema.Types.ObjectId,
-      ref: "Post",
-      required: [true, "invaild post id "],
+      type: DataTypes.TEXT,
+      allowNull: false,
     },
   },
-  { timestamps: true }
+  {
+    freezeTableName: true,
+  }
 );
-const Comment = mongoose.model("Comment", commentSchema);
-export default Comment
+
+export default Comment;

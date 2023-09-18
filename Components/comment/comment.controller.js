@@ -1,10 +1,10 @@
 import Comment from "../../DBs/models/comment.model.js";
-import APIFeatures from "../../utils/apiFeatures.js";
+
 
 export const createComment = async (req, res) => {
   try {
-    const { body, ownerId, postId } = req.body;
-    const comment = new Comment({ body, owner: ownerId, post: postId });
+    const { body, owner_id, post_id } = req.body;
+    const comment = new Comment({ body, owner_id, post_id });
     const savedComment = await comment.save();
     res.status(201).json({ comment: savedComment });
   } catch (error) {
@@ -13,12 +13,14 @@ export const createComment = async (req, res) => {
 };
 export const getComments = async (req, res) => {
   try {
-    let feature = new APIFeatures(Comment.find(), req.query)
-      .filter()
-      .sort()
-      .paginate()
-      .limitFields();
-    const comments = await feature.query;
+    const { limit, page, search, fields, orderby } = req.query;
+    const comments = await Comment.findAndCountAll({
+      attributes: fields?.split(",") || "",
+      limit: limit * 1 || 100,
+      offset: (page - 1) * limit || 0,
+      where: { body: { [Op.like]: "%" + (search ? search : "") + "%" } },
+      order: orderby ? [orderby.split(",")] : [],
+    });
     res.status(200).json({ comments });
   } catch (error) {
     res.status(400).json({ message: error.message });

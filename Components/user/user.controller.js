@@ -1,9 +1,10 @@
+import { where } from "sequelize";
 import Friendship from "../../DBs/models/friendship.model.js";
 
 export const sendFriendRequest = async (req, res) => {
   try {
-    const { firstUser, secondUser } = req.query;
-    const friendship = new Friendship({ firstUser, secondUser });
+    const { first_friend, second_friend } = req.query;
+    const friendship = new Friendship({ first_friend, second_friend });
     const savedFriendship = await friendship.save();
     if (savedFriendship) {
       res.status(201).json({ message: "friendship request sent" });
@@ -14,12 +15,8 @@ export const sendFriendRequest = async (req, res) => {
 };
 export const acceptFriendRequest = async (req, res) => {
   try {
-    const { firstUser, secondUser } = req.query;
-    const friendship =await Friendship.findOneAndUpdate(
-      { firstUser, secondUser },
-      { $set: { status: "accepted" } },
-      { new: true }
-    );
+    const { first_friend, second_friend } = req.query;
+    const friendship =await Friendship.update({status : 'accepted'},{where:{first_friend,second_friend }});
     if (friendship)
       res.status(200).json({ message: "friendship request accepted" });
   } catch (error) {

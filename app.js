@@ -1,4 +1,6 @@
 import connectDB from "./DBs/connection.js";
+import { sequelizeConnection } from "./DBs/connection.js";
+import initRelations from "./DBs/relationships.js";
 import * as routes from "./Components/index.route.js";
 import dotenv from "dotenv";
 import express from "express";
@@ -8,8 +10,17 @@ dotenv.config({ path: "./config/config.env" });
 
 const app = express();
 const PORT = process.env.PORT;
-connectDB();
 
+connectDB();
+await initRelations();
+await sequelizeConnection
+  .sync({})
+  .then(() => {
+    console.log("table created successfully!");
+  })
+  .catch((error) => {
+    console.error("Unable to create table User : ", error);
+  });
 app.use(express.json());
 app.use(cors());
 app.use("/api/v1/auth", routes.authRoutes);

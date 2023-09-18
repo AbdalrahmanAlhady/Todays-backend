@@ -1,25 +1,16 @@
-import mongoose from "mongoose";
-const { Schema } = mongoose;
+import { sequelizeConnection } from "../connection.js";
+import { DataTypes } from "sequelize";
 
-const friendshipSchema = new Schema(
+const Friendship = sequelizeConnection.define("friendship",
   {
-    firstUser: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: [true, "invaild user id "],
-    },
-    secondUser: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: [true, "invaild user id "],
-    },
     status:{
-        type:String,
-        enum:['requested','accepted'],
-        default: 'requested'
+      type: DataTypes.ENUM('requested','accepted'),
+      allowNull: false,
+      defaultValue:'requested'
     }
   },
-  { timestamps: true }
+  {
+    freezeTableName: true,
+  }
 );
-const Friendship= mongoose.model("Friendship", friendshipSchema);
 export default Friendship

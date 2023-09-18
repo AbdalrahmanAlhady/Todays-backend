@@ -1,21 +1,17 @@
-import mongoose from "mongoose";
-const { Schema } = mongoose;
+import { sequelizeConnection } from "../connection.js";
+import { DataTypes } from "sequelize";
 
-const postSchema = new Schema(
+const Post = sequelizeConnection.define(
+  "post",
   {
     body: {
-      type: String,
-      min: [true, "can't create empty post "],
-      required: true,
+      type: DataTypes.TEXT,
+      allowNull: false,
     },
-    owner: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: [true, "invaild user id "],
-    },
-   
   },
-  { timestamps: true }
+  {
+    freezeTableName: true,
+  }
 );
-const Post = mongoose.model('Post',postSchema);
+
 export default Post;

@@ -11,10 +11,10 @@ const secret = process.env.SECRET;
 export const signup = async (req, res) => {
   try {
     const userData = req.body;
-    if (await User.find({ email: userData.email })) {
+    if (await User.findOne({ where: { email: userData.email } })) {
       res.status(400).json({ message: "this email is already exist" });
       return;
-    } else if (await User.find({ phone: userData.phone })) {
+    } else if (await User.findOne({ where: { phone: userData.phone } })) {
       res.status(400).json({ message: "this phone number is already exist" });
       return;
     }
@@ -33,7 +33,7 @@ export const signup = async (req, res) => {
 export const signin = async (req, res) => {
   try {
     const userData = req.body;
-    const foundUser = await User.findOne({ email: userData.email });
+    const foundUser = await User.findOne({ where: { email: userData.email } });
     if (foundUser) {
       const passwordMatched = await bcrypt.compare(
         userData.password,
@@ -55,7 +55,7 @@ export const signin = async (req, res) => {
 export const forgetPassword = async (req, res) => {
   try {
     const userData = req.body;
-    let foundUser = await User.findOne({ email: userData.email });
+    let foundUser = await User.findOne({ where: { email: userData.email } });
     if (foundUser) {
       if (userData.OTP === foundUser.OTP) {
         if (userData.newPassword === userData.newCPassword) {
@@ -79,20 +79,26 @@ export const forgetPassword = async (req, res) => {
   }
 };
 export const sendOTPCode = async (req, res) => {
-  const userData = req.body;
-  const foundUser = await User.findOne({ email: userData.email });
-  let OTP = nanoid();
-  if (foundUser) {
-    const savedUser = await foundUser.save();
-    foundUser.OTP = OTP;
-    await foundUser.save();
-    sendEmail(
-      foundUser.email,
-      `your verification code is : ${OTP} `,
-      "OTP code"
-    );
-    res.status(200).json({ message: "mail sent" });
-  } else {
-    res.status(404).json({ message: "credential not found" });
+  try {
+    const userData = req.body;
+    const foundUser = await User.findOne({ where: { email: userData.email } });
+    console.log(userData)
+    console.log(foundUser)
+    let OTP = nanoid();
+    if (foundUser) {
+      const savedUser = await foundUser.save();
+      foundUser.OTP = OTP;
+      await foundUser.save();
+      sendEmail(
+        foundUser.email,
+        `your verification code is : ${OTP} `,
+        "OTP code"
+      );
+      res.status(200).json({ message: "mail sent" });
+    } else {
+      res.status(404).json({ message: "credential not found" });
+    }
+  } catch (error) {
+    res.status(400).json({ error: error.message });
   }
 };
