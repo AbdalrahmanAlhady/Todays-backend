@@ -7,7 +7,7 @@ export const sequelizeConnection = new Sequelize(
   {
     host: dbConfig.HOST,
     dialect: dbConfig.dialect,
-    port: 5807,
+    port: 3306,
     pool: {
       max: dbConfig.pool.max,
       min: dbConfig.pool.min,

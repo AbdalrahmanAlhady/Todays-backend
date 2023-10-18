@@ -1,8 +1,8 @@
 const dbConfig = {
-    HOST: "containers-us-west-140.railway.app",
-    USER: "root",
-    PASSWORD: "K0fcotH1rx3AXktxjp19",
-    DB: "railway",
+    HOST: "sql11.freemysqlhosting.net",
+    USER: "sql11653766",
+    PASSWORD: "FBwfCQPyvs",
+    DB: "sql11653766",
     dialect: "mysql",
     pool: {
       max: 5,

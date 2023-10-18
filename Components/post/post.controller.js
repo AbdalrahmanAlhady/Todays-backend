@@ -1,6 +1,7 @@
 import Post from "../../DBs/models/post.model.js";
-import { Op, Sequelize } from "sequelize";
+import { Op, Sequelize, col } from "sequelize";
 import { json } from "express";
+import parseOData from "odata-sequelize";
 
 export const createPost = async (req, res) => {
   try {
@@ -29,14 +30,23 @@ export const getPostById = async (req, res) => {
 export const getPosts = async (req, res) => {
   try {
     const { limit, page, filter, fields, orderby } = req.query;
-    const posts = await Post.findAndCountAll({
-      attributes: fields?.split(",") || "",
-      limit: limit * 1 || 100,
-      offset: (page - 1) * limit || 0,
-      where: Sequelize.where(col(filter.split(",")[0]),filter.split(",")[2],filter.split(",")[3]),
-      order: orderby ? [orderby.split(",")] : [],
-    });
-    console.log(filter)
+    let query = "";
+    if (page && limit) {
+      query =
+        query + `$top=${limit * 1 || 100}&$skip=${(page - 1) * limit || 0}&`;
+    }
+    if (fields) {
+      query = query + `$select=${fields}&`;
+    }
+    if (filter) {
+      query = query + `$filter=substringof('${filter.split(",")[2]}', body)&`;
+    }
+    if (orderby) {
+      query =
+        query + `$orderby=${orderby.split(",")[0]} ${orderby.split(",")[1]}&`;
+    }
+    query = query.slice(0, -1);
+    const posts = await Post.findAndCountAll(parseOData(query, Sequelize));
     res.status(200).json({ posts });
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -66,3 +76,4 @@ export const deletePost = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
