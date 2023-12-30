@@ -7,8 +7,8 @@ router.post("/",createComment);
 
 router.get("/",getComments);
 
-router.put("/:id",updateComment);
+router.put("/:id?",updateComment);
 
-router.delete("/:id",deleteComment);
+router.delete("/:id?",deleteComment);
 
 export default router;

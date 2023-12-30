@@ -27,6 +27,7 @@ app.use("/api/v1/auth", routes.authRoutes);
 app.use("/api/v1/user", auth, routes.userRoutes);
 app.use("/api/v1/posts", auth, routes.postRoutes);
 app.use("/api/v1/comments", auth, routes.commentRoutes);
+app.use("/api/v1/media", auth, routes.mediaRoutes);
 
 app.listen(PORT, (error) => {
   if (!error) console.log("listening on " + PORT);

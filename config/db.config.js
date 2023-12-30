@@ -1,8 +1,8 @@
 const dbConfig = {
-    HOST: "sql11.freemysqlhosting.net",
-    USER: "sql11653766",
-    PASSWORD: "FBwfCQPyvs",
-    DB: "sql11653766",
+    HOST: "127.0.0.1",
+    USER: "root",
+    PASSWORD: "123456",
+    DB: "today's_db",
     dialect: "mysql",
     pool: {
       max: 5,
