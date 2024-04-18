@@ -1,5 +1,5 @@
 import { sequelizeConnection } from "../connection.js";
-import { DataTypes } from "sequelize";
+import { DataTypes, Sequelize } from "sequelize";
 
 const Media = sequelizeConnection.define(
   "media",
@@ -16,6 +16,9 @@ const Media = sequelizeConnection.define(
       type: DataTypes.STRING,
       defaultValue: "firebase",
     },
+    dimensions:{
+      type: DataTypes.JSON,
+    }
   },
   {
     freezeTableName: true,

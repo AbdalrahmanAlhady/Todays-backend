@@ -23,7 +23,39 @@ export const createPost = async (req, res) => {
 
 export const getPostById = async (req, res) => {
   try {
-    const post = await Post.findByPk(req.params.id);
+    let query = "";
+    let includables = [
+      {
+        model: User,
+        attributes: ["id", "profileImg", "first_name", "last_name"],
+      },
+      {
+        model: Media,
+        attributes: ["id", "url", "type","dimensions"],
+      },
+      {
+        model: Comment,
+        attributes: ["id", "body", "createdAt"],
+        include: [
+          {
+            model: User,
+            attributes: ["id", "profileImg", "first_name", "last_name"],
+          },
+          {
+            model: Media,
+            as: "media",
+            attributes: ["id", "url", "type", "dimensions"],
+          },
+        ],
+      },
+      {
+        model: User,
+        attributes: ["id", "first_name", "last_name"],
+        as: "likes",
+        through: { model: PostLikes, attributes: [] },
+      },
+    ];
+    const post = await Post.findByPk(req.params.id, { include: includables });
     if (post) {
       res.status(201).json({ post });
     } else {
@@ -45,7 +77,7 @@ export const getPosts = async (req, res) => {
       },
       {
         model: Media,
-        attributes: ["id", "url", "type"],
+        attributes: ["id", "url", "type","dimensions"],
       },
       {
         model: Comment,
@@ -57,8 +89,8 @@ export const getPosts = async (req, res) => {
           },
           {
             model: Media,
-            as:'media',
-            attributes: ["id", "url", "type"],
+            as: "media",
+            attributes: ["id", "url", "type", "dimensions"],
           },
         ],
       },
@@ -130,7 +162,11 @@ export const likePost = async (req, res) => {
     if (newPostsLikes.length > oldPostsLikes.length) {
       res
         .status(201)
-        .json({ message: "post liked", likesCount: newPostsLikes.length,newLike:newPostLike });
+        .json({
+          message: "post liked",
+          likesCount: newPostsLikes.length,
+          newLike: newPostLike,
+        });
     } else {
       res
         .status(400)

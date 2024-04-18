@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { storePostImgsUrls } from "./media.controller.js";
+import { storeMediaUrls } from "./media.controller.js";
 const router = new Router();
 
-router.post("/storePostImgsUrls", storePostImgsUrls);
+router.post("/storeMediaUrls", storeMediaUrls);
 
 export default router;
