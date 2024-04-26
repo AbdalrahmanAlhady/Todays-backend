@@ -43,6 +43,18 @@ const User = sequelizeConnection.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    profileCoverImg: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    online:{
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+    },
+    socket_id: {
+      type: sequelize.DataTypes.STRING,
+      allowNull: true,
+    },
     OTP: {
       type: DataTypes.STRING,
       allowNull: true,
