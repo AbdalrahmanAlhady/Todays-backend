@@ -3,15 +3,19 @@ import {
   acceptFriendRequest,
   getUser,
   sendFriendRequest,
-  unfriend,
+  checkFriendship,
+  unfriendOrDeclineFriendRequest
 } from "./user.controller.js";
 
 const router = new Router();
 
 router.post("/sendFriendRequest", sendFriendRequest);
-router.post("/acceptFriendRequest", acceptFriendRequest);
-router.get('/:id?',getUser)
 
-router.delete("/unfriend", unfriend);
+router.patch("/acceptFriendRequest", acceptFriendRequest);
+
+router.get('/checkFriendship',checkFriendship);
+router.get('/:id?',getUser);
+
+router.delete("/unfriendOrDeclineFriendRequest", unfriendOrDeclineFriendRequest);
 
 export default router;

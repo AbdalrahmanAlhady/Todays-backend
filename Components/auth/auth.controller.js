@@ -83,8 +83,6 @@ export const sendOTPCode = async (req, res) => {
     try {
         const userData = req.body;
         const foundUser = await User.findOne({where: {email: userData.email}});
-        console.log(userData)
-        console.log(foundUser)
         let OTP = nanoid();
         if (foundUser) {
             const savedUser = await foundUser.save();

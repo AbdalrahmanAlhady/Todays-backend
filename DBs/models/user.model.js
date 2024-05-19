@@ -52,7 +52,7 @@ const User = sequelizeConnection.define(
       allowNull: true,
     },
     socket_id: {
-      type: sequelize.DataTypes.STRING,
+      type: DataTypes.STRING,
       allowNull: true,
     },
     OTP: {
