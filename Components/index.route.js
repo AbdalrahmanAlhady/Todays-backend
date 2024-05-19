@@ -3,9 +3,11 @@ import postRoutes from "./post/post.routes.js";
 import commentRoutes from "./comment/comment.routes.js"
 import userRoutes from "./user/user.routes.js"
 import mediaRoutes from "./media/media.routes.js"
+import notificationRoutes from "./notification/notification.routes.js"
 
-export { authRoutes };
-export { postRoutes };
-export { commentRoutes };
-export { userRoutes };
+export {authRoutes};
+export {postRoutes};
+export {commentRoutes};
+export {userRoutes};
 export {mediaRoutes}
+export {notificationRoutes}

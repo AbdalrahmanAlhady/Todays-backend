@@ -1,15 +1,20 @@
 import Comment from "../../DBs/models/comment.model.js";
+import Post from "../../DBs/models/post.model.js";
 import User from "../../DBs/models/user.model.js";
+import {notifyUserBySocket} from "../../service/socket-io.js"
 
 export const createComment = async (req, res) => {
   try {
     const { body, owner_id, post_id } = req.body;
     const comment = await Comment.create({ body, owner_id, post_id });
-    const user = await User.findByPk(owner_id);
-    comment.setDataValue('user',user)
-    res.status(201).json({ comment});
+    const commentOwner = await User.findByPk(owner_id);
+    const post = await Post.findByPk(post_id);
+    comment.setDataValue('user',commentOwner)
+    await notifyUserBySocket('has commented on your post', commentOwner.id, post.owner_id, 'comment',post_id,comment.dataValues.id,null)
+    res.status(201).json({ comment });
   } catch (error) {
     res.status(201).json({ message: error.message });
+    console.log(error)
   }
 };
 export const getComments = async (req, res) => {

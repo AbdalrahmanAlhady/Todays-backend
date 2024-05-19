@@ -6,20 +6,21 @@ import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
 import { auth } from "./middleware/auth.js";
+import { connect } from "./service/socket-io.js";
 dotenv.config({ path: "./config/config.env" });
 
 const app = express();
 const PORT = process.env.PORT;
 
 connectDB();
-await initRelations();
+await initRelations()
 await sequelizeConnection
   .sync({})
   .then(() => {
     console.log("table created successfully!");
   })
   .catch((error) => {
-    console.error("Unable to create table User : ", error);
+    console.error("Unable to create table  : ", error);
   });
 app.use(express.json());
 app.use(cors());
@@ -28,8 +29,11 @@ app.use("/api/v1/user", auth, routes.userRoutes);
 app.use("/api/v1/posts", auth, routes.postRoutes);
 app.use("/api/v1/comments", auth, routes.commentRoutes);
 app.use("/api/v1/media", auth, routes.mediaRoutes);
+app.use("/api/v1/notification", auth, routes.notificationRoutes);
 
-app.listen(PORT, (error) => {
-  if (!error) console.log("listening on " + PORT);
-  else console.log("Error occurred, server can't start", error);
+export const httpServer = app.listen(PORT, (error) => {
+  if (!error) {
+    console.log("listening on " + PORT);
+    connect();
+  } else console.log("Error occurred, server can't start", error);
 });
