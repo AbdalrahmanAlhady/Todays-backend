@@ -7,9 +7,9 @@ import Notification from "../DBs/models/notification.model.js";
 
 let onlineUsersList = new Map();
 let Socket;
-
+let io;
 export async function connect() {
-  const io = new Server(httpServer, {
+  io = new Server(httpServer, {
     cors: {
       origin: "*",
     },
@@ -76,7 +76,8 @@ export async function notifyUserBySocket(
   let notification = await Notification.findByPk(createdNotification.id, {
     include: includables,
   });
-  Socket.broadcast.to(receiver.socket_id).emit("notify", notification);
+  
+  io.to(receiver.socket_id).emit("notify", notification);
 }
 
 function deleteUser(userName, id, socket) {

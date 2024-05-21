@@ -48,22 +48,8 @@ export const getPostById = async (req, res) => {
       },
       {
         model: Media,
+        as:'media',
         attributes: ["id", "url", "type", "dimensions"],
-      },
-      {
-        model: Comment,
-        attributes: ["id", "body", "createdAt"],
-        include: [
-          {
-            model: User,
-            attributes: ["id", "profileImg", "first_name", "last_name"],
-          },
-          {
-            model: Media,
-            as: "media",
-            attributes: ["id", "url", "type", "dimensions"],
-          },
-        ],
       },
       {
         model: User,
@@ -98,21 +84,6 @@ export const getPosts = async (req, res) => {
         attributes: ["id", "url", "type", "dimensions"],
       },
       {
-        model: Comment,
-        attributes: ["id", "body", "createdAt"],
-        include: [
-          {
-            model: User,
-            attributes: ["id", "profileImg", "first_name", "last_name"],
-          },
-          {
-            model: Media,
-            as: "media",
-            attributes: ["id", "url", "type", "dimensions"],
-          },
-        ],
-      },
-      {
         model: User,
         attributes: ["id", "first_name", "last_name"],
         as: "likes",
@@ -120,7 +91,7 @@ export const getPosts = async (req, res) => {
       },
     ];
     if (user_id) {
-      query = query + `$filter=owner_id eq 2&`;
+      query = query + `$filter=owner_id eq ${user_id}&`;
     }
     if (page && limit) {
       query =
