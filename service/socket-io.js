@@ -1,45 +1,116 @@
-import { Server } from "socket.io";
-import { httpServer } from "../app.js";
+import { io } from "../app.js";
 import { getUser } from "../Components/user/user.controller.js";
 import User from "../DBs/models/user.model.js";
 import Friendship from "../DBs/models/friendship.model.js";
 import Notification from "../DBs/models/notification.model.js";
+import { Op } from "sequelize";
 
-let onlineUsersList = new Map();
+let onlineUserAndHisFriends = new Map();
 let Socket;
-let io;
 export async function connect() {
-  io = new Server(httpServer, {
-    cors: {
-      origin: "*",
-    },
-  });
   io.on("connection", async (socket) => {
     Socket = socket;
     socket.on("set-userID", async (user_id) => {
       if (user_id) {
-        await addUser(user_id, socket.id, socket);
+        console.log(
+          `user with id ${user_id} connected on socket id: ${socket.id}`
+        );
+        await addUser(user_id, socket);
+        disconnectUser(socket, user_id);
       }
-    });
-
-    socket.on("disconnect", (reason) => {
-      socket.disconnect();
-      //   deleteUser(userName, socket.id, socket);
     });
   });
 }
 
-async function addUser(user_id, socket_id, socket) {
-  let user = await User.findByPk(user_id);
-  if (!!user) {
-    const updatedUser = await User.update(
-      { socket_id: socket_id },
-      { where: { id: user_id } }
-    );
-    onlineUsersList.set(user_id, user);
-    socket.emit("online-user-list", [...onlineUsersList.values()]);
-    socket.broadcast.emit("online-user-list", [...onlineUsersList.values()]);
-  }
+async function addUser(user_id, socket) {
+  const updatedUser = await User.update(
+    { socket_id: socket.id, online: true },
+    { where: { id: user_id } }
+  );
+  const currentUser = await User.findByPk(user_id, {
+    raw: true,
+    attributes: [
+      "id",
+      "profileImg",
+      "first_name",
+      "last_name",
+      "online",
+      "socket_id",
+      "updatedAt",
+    ],
+  });
+  getOnlineFriendsAndNotifyThem(user_id, socket, currentUser);
+}
+async function getOnlineFriendsAndNotifyThem(user_id, socket, currentUser) {
+  //send to user a list of their online friends
+  let userFriendships = await Friendship.findAll({
+    where: {
+      [Op.and]: [
+        { status: "accepted" },
+        { [Op.or]: [{ sender_id: user_id }, { receiver_id: user_id }] },
+      ],
+    },
+    attributes: ["sender_id", "receiver_id"],
+    raw: true,
+  });
+  let senders_ids = [];
+  let receivers_ids = [];
+  console.log("userFriendships", userFriendships);
+  userFriendships.forEach((friendship) => {
+    if (user_id !== friendship.sender_id) {
+      senders_ids.push(friendship.sender_id);
+    }
+    if (user_id !== friendship.receiver_id) {
+      receivers_ids.push(friendship.receiver_id);
+    }
+  });
+  let onlineFriends = await User.findAll({
+    where: {
+      [Op.and]: [
+        {
+          [Op.or]: [
+            { id: { [Op.in]: senders_ids } },
+            { id: { [Op.in]: receivers_ids } },
+          ],
+        },
+        { online: true },
+      ],
+    },
+    raw: true,
+    attributes: [
+      "id",
+      "profileImg",
+      "first_name",
+      "last_name",
+      "online",
+      "socket_id",
+      "updatedAt",
+    ],
+  });
+
+  const mappedOnlineFriends = new Map(
+    onlineFriends.map((user) => [user.id, user])
+  );
+  console.log("mappedOnlineFriends", mappedOnlineFriends);
+  onlineUserAndHisFriends.set(user_id, mappedOnlineFriends);
+
+  // notify user about online friends
+  socket.emit("online-friends-list", [
+    ...onlineUserAndHisFriends.get(user_id).values(),
+  ]);
+  // notify online friends about user became online
+  onlineUserAndHisFriends.get(user_id).forEach((value, key) => {
+    console.log("value", value);
+    if (!onlineUserAndHisFriends.has(key)) {
+      onlineUserAndHisFriends.set(key, new Map());
+    }
+    onlineUserAndHisFriends.get(key).set(user_id, currentUser);
+    io.to(value.socket_id).emit("online-friends-list", [
+      ...onlineUserAndHisFriends.get(key).values(),
+    ]);
+  });
+  console.log("onlineUserAndHisFriends", onlineUserAndHisFriends);
+  console.log("--------------------------");
 }
 
 export async function notifyUserBySocket(
@@ -71,17 +142,47 @@ export async function notifyUserBySocket(
     type,
     post_id,
     comment_id,
-    friendship_id
+    friendship_id,
   });
   let notification = await Notification.findByPk(createdNotification.id, {
     include: includables,
   });
-  
-  io.to(receiver.socket_id).emit("notify", notification);
+  console.log(receiver.socket_id);
+  console.log(notification);
+  if (receiver.socket_id && notification) {
+    io.to(receiver.socket_id).emit("notify", notification);
+  }
 }
-
-function deleteUser(userName, id, socket) {
-  onlineUsersList.delete(userName);
-  socket.emit("online-user-list", [...onlineUsersList.keys()]);
-  socket.broadcast.emit("online-user-list", [...onlineUsersList.keys()]);
+export async function sendMessageBySocket(message, receiver_id) {
+  let receiver = await User.findByPk(receiver_id);
+  console.log(receiver.socket_id);
+  console.log(message);
+  io.to(receiver.socket_id).emit("message", message);
+}
+export function disconnectUser(socket, user_id) {
+  console.log(user_id);
+  socket.on("disconnect", async (reason) => {
+    console.log(`user with id ${user_id} disconnected from socket`);
+    console.log("reason", reason);
+    console.log("disconnect", socket.id);
+    if (reason === "io server disconnect") {
+      // the disconnection was initiated by the server, you need to reconnect manually
+      socket.connect();
+    }
+    let userFriends = onlineUserAndHisFriends.get(user_id);
+    const offlineUser = await User.update(
+      { online: false },
+      { where: { id: user_id } }
+    );
+    onlineUserAndHisFriends.delete(user_id);
+    userFriends?.forEach((friend) => {
+      let hisFriend = onlineUserAndHisFriends.get(friend.id);
+      if (hisFriend) {
+        hisFriend.delete(user_id);
+        io.to(friend.socket_id).emit("online-friends-list", [
+          ...hisFriend.values(),
+        ]);
+      }
+    });
+  });
 }

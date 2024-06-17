@@ -5,6 +5,8 @@ import Friendship from "./models/friendship.model.js";
 import PostLikes from "./models/postLikes.model.js";
 import Media from "./models/media.model.js";
 import Notification from "./models/notification.model.js";
+import Message from "./models/message.model.js";
+import Conversation from "./models/conversation.model.js";
 export function initRelations() {
   // ---------------- user post------------
   User.hasMany(Post, {
@@ -48,7 +50,7 @@ export function initRelations() {
       name: "post_id",
       allowNull: true,
     },
-    as:'media',
+    as: "media",
     onDelete: "CASCADE",
     onUpdate: "CASCADE",
   });
@@ -59,7 +61,7 @@ export function initRelations() {
       name: "comment_id",
       allowNull: true,
     },
-    as:'media',
+    as: "media",
     onDelete: "CASCADE",
     onUpdate: "CASCADE",
   });
@@ -182,6 +184,59 @@ export function initRelations() {
     foreignKey: "friendship_id",
     as: "notification",
   });
-  
+  //------------------user message--------------------
+  Conversation.belongsTo(User, {
+    foreignKey: {
+      name: "first_user_id",
+      allowNull: false,
+    },
+    as: "first_user",
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE",
+  });
+  Conversation.belongsTo(User, {
+    foreignKey: {
+      name: "second_user_id",
+      allowNull: false,
+    },
+    as: "second_user",
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE",
+  });
+  //------------------user message--------------------
+  Message.belongsTo(User, {
+    foreignKey: {
+      name: "sender_id",
+      allowNull: false,
+    },
+    as: "sender",
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE",
+  });
+  Message.belongsTo(User, {
+    foreignKey: {
+      name: "receiver_id",
+      allowNull: false,
+    },
+    as: "receiver",
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE",
+  });
+  //------------------Conversation message--------------------
+  Message.belongsTo(Conversation, {
+    foreignKey: {
+      name: "conversation_id",
+      allowNull: false,
+    },
+    as: "conversation",
+    through: Message,
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE",
+  });
+  Conversation.hasMany(Message, {
+    foreignKey: "conversation_id",
+    as: "messages",
+  });
+
 }
 export default initRelations;
