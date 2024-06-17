@@ -1,7 +1,9 @@
 import { Router } from "express";
-import { storeMediaUrls } from "./media.controller.js";
+import { deleteMedia, storeMedia } from "./media.controller.js";
 const router = new Router();
 
-router.post("/storeMediaUrls", storeMediaUrls);
+router.post("/", storeMedia);
+
+router.delete("/:id", deleteMedia);
 
 export default router;

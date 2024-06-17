@@ -5,10 +5,10 @@ const router = new Router()
 
 router.post("/",createComment);
 
-router.get("/",getComments);
+router.get("/post/:post_id",getComments);
 
-router.put("/:id?",updateComment);
-
-router.delete("/:id?",deleteComment);
+router.route("/:id")
+    .patch(updateComment)  
+    .delete(deleteComment);
 
 export default router;

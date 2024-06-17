@@ -41,7 +41,7 @@ export const getComments = async (req, res) => {
         attributes: ["id", "url", "type"],
       },
     ];
-    const { limit, page, filter, fields, orderby, post_id } = req.query;
+    const { limit, page, filter, fields, orderby } = req.query;
     let query = "";
     if (page && limit) {
       query =
@@ -57,8 +57,8 @@ export const getComments = async (req, res) => {
       query =
         query + `$orderby=${orderby.split(",")[0]} ${orderby.split(",")[1]}&`;
     }
-    if (post_id) {
-      query = query + `$filter=post_id eq ${post_id}&`;
+    if (req.params.post_id) {
+      query = query + `$filter=post_id eq ${req.params.post_id}&`;
     }
     let queryWithIncludables = query
       ? {
@@ -77,10 +77,9 @@ export const getComments = async (req, res) => {
 export const updateComment = async (req, res) => {
   try {
     const body = req.body.body;
-    const comment = await Comment.findOneAndUpdate(
-      { _id: req.params.id },
-      { $set: { body } },
-      { new: true }
+    const comment = await Comment.update(
+      { body },
+      { where: { id: req.params.id } }
     );
     res.status(200).json({ comment });
   } catch (error) {
@@ -90,7 +89,7 @@ export const updateComment = async (req, res) => {
 
 export const deleteComment = async (req, res) => {
   try {
-    const comment = await Comment.deleteOne({ _id: req.params.id });
+    const comment = await Comment.destroy({ where: { id: req.params.id } });
     res.status(200).json({ comment });
   } catch (error) {
     res.status(400).json({ message: error.message });

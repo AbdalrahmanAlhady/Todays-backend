@@ -1,18 +1,14 @@
 import { Router } from "express";
-import { createPost,deletePost,getPostById,getPosts, isLikedPost, likePost, unlikePost, updatePost } from "./post.controller.js";
+import { createPost,deletePost,getPosts,updatePost } from "./post.controller.js";
 
 const router = new Router();
 
 router.post("/", createPost);
-router.post("/likePost/:user_id?/:post_id?", likePost);
 
-router.get("/",getPosts)
-router.get("/isLikedPost/:user_id?/:post_id?",isLikedPost)
-router.get("/:id?",getPostById)
+router.get("/:id?",getPosts)
 
-router.put("/:id?",updatePost)
-
-router.delete("/unlikePost/:user_id?/:post_id?",unlikePost)
-router.delete("/:id?",deletePost)
+router.route("/:id")
+  .patch(updatePost)
+  .delete(deletePost);
 
 export default router;

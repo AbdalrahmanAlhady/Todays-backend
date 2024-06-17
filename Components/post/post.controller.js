@@ -1,7 +1,7 @@
 import Post from "../../DBs/models/post.model.js";
 import User from "../../DBs/models/user.model.js";
 import Media from "../../DBs/models/media.model.js";
-import { Op, Sequelize } from "sequelize";
+import { Op, Sequelize, where } from "sequelize";
 import parseOData from "odata-sequelize";
 import PostLikes from "../../DBs/models/postLikes.model.js";
 import Comment from "../../DBs/models/comment.model.js";
@@ -40,7 +40,6 @@ export const createPost = async (req, res) => {
 
 export const getPostById = async (req, res) => {
   try {
-    let query = "";
     let includables = [
       {
         model: User,
@@ -48,7 +47,7 @@ export const getPostById = async (req, res) => {
       },
       {
         model: Media,
-        as:'media',
+        as: "media",
         attributes: ["id", "url", "type", "dimensions"],
       },
       {
@@ -71,7 +70,7 @@ export const getPostById = async (req, res) => {
 
 export const getPosts = async (req, res) => {
   try {
-    const { limit, page, filter, fields, orderby, user_id } = req.query;
+    const { limit, page, filter, fields, orderby, user_id, id } = req.query;
     let query = "";
     let includables = [
       {
@@ -80,7 +79,7 @@ export const getPosts = async (req, res) => {
       },
       {
         model: Media,
-        as:'media',
+        as: "media",
         attributes: ["id", "url", "type", "dimensions"],
       },
       {
@@ -90,8 +89,18 @@ export const getPosts = async (req, res) => {
         through: { model: PostLikes, attributes: [] },
       },
     ];
+    if (id) {
+      query = query + `$filter=id eq ${id}&`;
+    }
     if (user_id) {
-      query = query + `$filter=owner_id eq ${user_id}&`;
+      if (query.includes("$filter")) {
+        query = query.replace(
+          "$filter=",
+          `$filter=owner_id eq ${user_id} and `
+        );
+      } else {
+        query = query + `$filter=owner_id eq ${user_id}&`;
+      }
     }
     if (page && limit) {
       query =
@@ -107,10 +116,11 @@ export const getPosts = async (req, res) => {
       query =
         query + `$orderby=${orderby.split(",")[0]} ${orderby.split(",")[1]}&`;
     }
+
     let queryWithIncludables = query
       ? {
           include: includables,
-          ...parseOData(query.slice(0, -1), Sequelize),
+          ...parseOData(query.slice(0, -1), Sequelize)
         }
       : { include: includables };
     const posts = await Post.findAndCountAll(queryWithIncludables);
@@ -123,10 +133,9 @@ export const getPosts = async (req, res) => {
 export const updatePost = async (req, res) => {
   try {
     const body = req.body.body;
-    const post = await Post.findOneAndUpdate(
-      { _id: req.params.id },
-      { $set: { body } },
-      { new: true }
+    const post = await Post.update(
+      { body },
+      { where: { id: req.params.id } }
     );
     res.status(200).json({ post });
   } catch (error) {
@@ -138,62 +147,6 @@ export const deletePost = async (req, res) => {
   try {
     const post = await Post.destroy({ where: { id: req.params.id } });
     res.status(200).json({ post });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-export const likePost = async (req, res) => {
-  try {
-    const { post_id, user_id } = req.query;
-    const oldPostsLikes = await PostLikes.findAll({ where: { post_id } });
-    const newPostLike = await PostLikes.create({ post_id, user_id });
-    const newPostsLikes = await PostLikes.findAll({ where: { post_id } });
-    if (newPostsLikes.length > oldPostsLikes.length) {
-      res.status(201).json({
-        message: "post liked",
-        likesCount: newPostsLikes.length,
-      });
-    } else {
-      res
-        .status(400)
-        .json({ message: "post not liked!", likesCount: oldPostCounts });
-    }
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-    console.log(error);
-  }
-};
-export const unlikePost = async (req, res) => {
-  try {
-    const { post_id, user_id } = req.query;
-    const oldPostLikes = await PostLikes.findAll({ where: { post_id } });
-    const newPostLike = await PostLikes.destroy({
-      where: { post_id, user_id },
-    });
-    const newPostLikes = await PostLikes.findAll({ where: { post_id } });
-    if (newPostLikes.length < oldPostLikes.length) {
-      res.status(201).json({
-        message: "post unliked",
-        likesCount: newPostLikes.length,
-        newPostLikes,
-      });
-    } else {
-      res.status(400).json({
-        message: "post unlike failed!",
-        likesCount: newPostLikes.length,
-      });
-    }
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-export const isLikedPost = async (req, res) => {
-  try {
-    const { post_id, user_id } = req.query;
-    const ifPostLiked = await PostLikes.findOne({
-      where: { post_id, user_id },
-    });
-    res.status(201).json({ postLiked: !!ifPostLiked });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
