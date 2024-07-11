@@ -16,9 +16,19 @@ const Media = sequelizeConnection.define(
       type: DataTypes.STRING,
       defaultValue: "firebase",
     },
-    dimensions:{
+    dimensions: {
       type: DataTypes.JSON,
+    },
+    for: {
+      type: DataTypes.ENUM("post", "comment", "profile", "cover"),
+      allowNull: false,
+    },
+    current:{
+      type: DataTypes.BOOLEAN,
+      defaultValue: null,
+      allowNull: true
     }
+    
   },
   {
     freezeTableName: true,
