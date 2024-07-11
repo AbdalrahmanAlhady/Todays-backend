@@ -68,6 +68,17 @@ export function initRelations() {
   Media.belongsTo(Comment, {
     foreignKey: { name: "comment_id", allowNull: true },
   });
+  // -------------------user media----------------
+  User.hasMany(Media, {
+    foreignKey: {
+      name: "owner_id",
+      allowNull: false,
+    },
+    as: "media",
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE",
+  });
+  Media.belongsTo(User, { foreignKey: { name: "owner_id", allowNull: false } });
   //  -----------------friendship-----------------
   User.belongsToMany(User, {
     foreignKey: {
@@ -89,6 +100,8 @@ export function initRelations() {
     onDelete: "CASCADE",
     onUpdate: "CASCADE",
   });
+  Friendship.belongsTo(User, { as: "sender", foreignKey: "sender_id" });
+  Friendship.belongsTo(User, { as: "receiver", foreignKey: "receiver_id" });
   //  ---------------PostLikes------------------
   User.belongsToMany(Post, {
     foreignKey: {
@@ -237,6 +250,5 @@ export function initRelations() {
     foreignKey: "conversation_id",
     as: "messages",
   });
-
 }
 export default initRelations;

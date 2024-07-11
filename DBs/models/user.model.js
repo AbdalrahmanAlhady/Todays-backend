@@ -39,14 +39,6 @@ const User = sequelizeConnection.define(
       type: DataTypes.ENUM("male", "female"),
       allowNull: false,
     },
-    profileImg: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    profileCoverImg: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
     online:{
       type: DataTypes.BOOLEAN,
       allowNull: true,
@@ -59,6 +51,11 @@ const User = sequelizeConnection.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    verified: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
+    }
   },
   {
     freezeTableName: true,
