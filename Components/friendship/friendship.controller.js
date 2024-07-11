@@ -1,6 +1,8 @@
-import { where } from "sequelize";
+import { Sequelize, where } from "sequelize";
 import Friendship from "../../DBs/models/friendship.model.js";
 import { notifyUserBySocket } from "../../service/socket-io.js";
+import parseOData from "odata-sequelize";
+import User from "../../DBs/models/user.model.js";
 
 export const sendFriendRequest = async (req, res) => {
   try {
@@ -19,6 +21,55 @@ export const sendFriendRequest = async (req, res) => {
       res.status(201).json({ message: "sent" });
     }
   } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+export const getFriendships = async (req, res) => {
+  try {
+    const { limit, page, filter, fields, orderby } = req.query;
+    let query = "";
+    let includables = [
+      {
+        model: User,
+        as: "sender",
+        attributes: ["id","first_name", "last_name"],
+      },
+      {
+        model: User,
+        as: "receiver",
+        attributes: ["id",  "first_name", "last_name"],
+      },
+    ];
+    if (req.params.user_id) {
+      query =
+        query +
+        `$filter=sender_id eq ${req.params.user_id} or receiver_id eq ${req.params.user_id}&`;
+    }
+    if (page && limit) {
+      query =
+        query + `$top=${limit * 1 || 100}&$skip=${(page - 1) * limit || 0}&`;
+    }
+    if (fields) {
+      query = query + `$select=${fields}&`;
+    }
+    if (filter) {
+      query = query + `$filter=substringof('${filter.split(",")[2]}', body)&`;
+    }
+    if (orderby) {
+      query =
+        query + `$orderby=${orderby.split(",")[0]} ${orderby.split(",")[1]}&`;
+    }
+    let queryWithIncludables = query
+      ? {
+          include: includables,
+          ...parseOData(query.slice(0, -1), Sequelize),
+        }
+      : { include: includables };
+    const friendships = await Friendship.findAndCountAll(queryWithIncludables);
+    res.status(200).json({ friendships });
+  } catch (error) {
+    console.log(error);
     res.status(400).json({ message: error.message });
   }
 };
