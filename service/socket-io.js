@@ -4,12 +4,13 @@ import User from "../DBs/models/user.model.js";
 import Friendship from "../DBs/models/friendship.model.js";
 import Notification from "../DBs/models/notification.model.js";
 import { Op } from "sequelize";
+import Media from "../DBs/models/media.model.js";
 
 let onlineUserAndHisFriends = new Map();
 let Socket;
 export async function connect() {
   io.on("connection", async (socket) => {
-    Socket = socket;
+    let Socket = socket;
     socket.on("set-userID", async (user_id) => {
       if (user_id) {
         console.log(
@@ -19,6 +20,9 @@ export async function connect() {
         disconnectUser(socket, user_id);
       }
     });
+    socket.on("get-online-friends", async (user_id) => {
+      getOnlineFriendsAndNotifyThem(user_id, socket);
+    });
   });
 }
 
@@ -27,21 +31,29 @@ async function addUser(user_id, socket) {
     { socket_id: socket.id, online: true },
     { where: { id: user_id } }
   );
+  socket.join("user" + user_id);
+
+}
+async function getOnlineFriendsAndNotifyThem(user_id, socket) {
   const currentUser = await User.findByPk(user_id, {
     raw: true,
     attributes: [
       "id",
-      "profileImg",
       "first_name",
       "last_name",
       "online",
       "socket_id",
       "updatedAt",
     ],
+    include: [
+      {
+        model: Media,
+        as: "media",
+        where: { type: "profile" , current: true},
+        attributes: [ "url"],
+      },
+    ]
   });
-  getOnlineFriendsAndNotifyThem(user_id, socket, currentUser);
-}
-async function getOnlineFriendsAndNotifyThem(user_id, socket, currentUser) {
   //send to user a list of their online friends
   let userFriendships = await Friendship.findAll({
     where: {
@@ -55,7 +67,6 @@ async function getOnlineFriendsAndNotifyThem(user_id, socket, currentUser) {
   });
   let senders_ids = [];
   let receivers_ids = [];
-  console.log("userFriendships", userFriendships);
   userFriendships.forEach((friendship) => {
     if (user_id !== friendship.sender_id) {
       senders_ids.push(friendship.sender_id);
@@ -79,13 +90,21 @@ async function getOnlineFriendsAndNotifyThem(user_id, socket, currentUser) {
     raw: true,
     attributes: [
       "id",
-      "profileImg",
       "first_name",
       "last_name",
       "online",
       "socket_id",
       "updatedAt",
+      
     ],
+    include: [
+      {
+        model: Media,
+        as: "media",
+        where: { type: "profile" , current: true},
+        attributes: [ "url"],
+      },
+    ]
   });
 
   const mappedOnlineFriends = new Map(
@@ -95,19 +114,23 @@ async function getOnlineFriendsAndNotifyThem(user_id, socket, currentUser) {
   onlineUserAndHisFriends.set(user_id, mappedOnlineFriends);
 
   // notify user about online friends
-  socket.emit("online-friends-list", [
-    ...onlineUserAndHisFriends.get(user_id).values(),
-  ]);
+  io.sockets
+    .in("user" + user_id)
+    .emit("online-friends-list", [
+      ...onlineUserAndHisFriends.get(user_id).values(),
+    ]);
   // notify online friends about user became online
   onlineUserAndHisFriends.get(user_id).forEach((value, key) => {
-    console.log("value", value);
+    //adds the current user to friend's online friends list
     if (!onlineUserAndHisFriends.has(key)) {
       onlineUserAndHisFriends.set(key, new Map());
     }
     onlineUserAndHisFriends.get(key).set(user_id, currentUser);
-    io.to(value.socket_id).emit("online-friends-list", [
-      ...onlineUserAndHisFriends.get(key).values(),
-    ]);
+    io.sockets
+      .in("user" + key)
+      .emit("online-friends-list", [
+        ...onlineUserAndHisFriends.get(key).values(),
+      ]);
   });
   console.log("onlineUserAndHisFriends", onlineUserAndHisFriends);
   console.log("--------------------------");
@@ -126,7 +149,15 @@ export async function notifyUserBySocket(
     {
       model: User,
       as: "sender",
-      attributes: ["id", "profileImg", "first_name", "last_name"],
+      attributes: ["id", "first_name", "last_name"],
+      include: [
+        {
+          model: Media,
+          as: "media",
+          where: { type: "profile" , current: true},
+          attributes: [ "url"],
+        },
+      ]
     },
   ];
   let sender = await User.findByPk(sender_id);
@@ -147,20 +178,15 @@ export async function notifyUserBySocket(
   let notification = await Notification.findByPk(createdNotification.id, {
     include: includables,
   });
-  console.log(receiver.socket_id);
-  console.log(notification);
-  if (receiver.socket_id && notification) {
-    io.to(receiver.socket_id).emit("notify", notification);
+  if (notification) {
+    io.sockets.in("user" + receiver_id).emit("notify", notification);
   }
 }
 export async function sendMessageBySocket(message, receiver_id) {
   let receiver = await User.findByPk(receiver_id);
-  console.log(receiver.socket_id);
-  console.log(message);
-  io.to(receiver.socket_id).emit("message", message);
+  io.sockets.in("user" + receiver_id).emit("message", message);
 }
 export function disconnectUser(socket, user_id) {
-  console.log(user_id);
   socket.on("disconnect", async (reason) => {
     console.log(`user with id ${user_id} disconnected from socket`);
     console.log("reason", reason);
@@ -179,9 +205,9 @@ export function disconnectUser(socket, user_id) {
       let hisFriend = onlineUserAndHisFriends.get(friend.id);
       if (hisFriend) {
         hisFriend.delete(user_id);
-        io.to(friend.socket_id).emit("online-friends-list", [
-          ...hisFriend.values(),
-        ]);
+        io.sockets
+          .in("user" + friend.id)
+          .emit("online-friends-list", [...hisFriend.values()]);
       }
     });
   });
