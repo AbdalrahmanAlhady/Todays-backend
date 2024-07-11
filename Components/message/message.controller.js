@@ -21,7 +21,15 @@ export const getMessagesOfConversation = async (req, res) => {
       {
         model: User,
         as: "receiver",
-        attributes: ["id", "profileImg", "first_name", "last_name"],
+        attributes: ["id",  "first_name", "last_name"],
+        include: [
+          {
+            model: Media,
+            as: "media",
+            where: { type: "profile" , current: true},
+            attributes: [ "url"],
+          },
+        ]
       },
     ];
     const { limit, page, filter, fields, orderby } = req.query;

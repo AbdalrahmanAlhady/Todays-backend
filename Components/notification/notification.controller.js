@@ -1,3 +1,4 @@
+import Media from "../../DBs/models/media.model.js";
 import Notification from "../../DBs/models/notification.model.js";
 import User from "../../DBs/models/user.model.js";
 
@@ -7,7 +8,15 @@ export const getUserNotification = async (req, res) => {
       {
         model: User,
         as: "sender",
-        attributes: ["id", "profileImg", "first_name", "last_name"],
+        attributes: ["id", "first_name", "last_name"],
+        include: [
+          {
+            model: Media,
+            as: "media",
+            where: { type: "profile" , current: true},
+            attributes: [ "url"],
+          },
+        ]
       },
     ];
     let notifications = await Notification.findAndCountAll({

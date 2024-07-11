@@ -33,7 +33,15 @@ export const getComments = async (req, res) => {
     let includables = [
       {
         model: User,
-        attributes: ["id", "profileImg", "first_name", "last_name"],
+        attributes: ["id", "first_name", "last_name"],
+        include: [
+          {
+            model: Media,
+            where: { type: "profile" , current: true},
+            as: "media",
+            attributes: [ "url"],
+          },
+        ]
       },
       {
         model: Media,

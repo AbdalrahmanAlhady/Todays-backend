@@ -43,7 +43,15 @@ export const getPostById = async (req, res) => {
     let includables = [
       {
         model: User,
-        attributes: ["id", "profileImg", "first_name", "last_name"],
+        attributes: ["id",  "first_name", "last_name"],
+        include: [
+          {
+            model: Media,
+            as: "media",
+            where: { type: "profile" , current: true},
+            attributes: [ "url"],
+          },
+        ]
       },
       {
         model: Media,
@@ -75,7 +83,21 @@ export const getPosts = async (req, res) => {
     let includables = [
       {
         model: User,
-        attributes: ["id", "profileImg", "first_name", "last_name"],
+        attributes: ["id",  "first_name", "last_name"],
+        include: [
+          {
+            model: Media,
+            as: "media",
+            where: {
+              [Op.and]: [
+                { current: true }, 
+                { for: "profile" },
+              ],
+            },
+            attributes: ["url", "for"],
+            required: false,
+          }
+        ]
       },
       {
         model: Media,

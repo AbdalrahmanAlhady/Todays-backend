@@ -3,6 +3,7 @@ import { Op, Sequelize } from "sequelize";
 import parseOData from "odata-sequelize";
 import User from "../../DBs/models/user.model.js";
 import Message from "../../DBs/models/message.model.js";
+import Media from "../../DBs/models/media.model.js";
 
 export const CreateConversation = async (req, res) => {
   try {
@@ -49,12 +50,28 @@ export const getConversationsOfUser = async (req, res) => {
       {
         model: User,
         as: "first_user",
-        attributes: ["id", "profileImg", "first_name", "last_name"],
+        attributes: ["id",  "first_name", "last_name"],
+        include: [
+          {
+            model: Media,
+            where: { type: "profile" , current: true},
+            as: "media",
+            attributes: [ "url"],
+          },
+        ]
       },
       {
         model: User,
         as: "second_user",
-        attributes: ["id", "profileImg", "first_name", "last_name"],
+        attributes: ["id",  "first_name", "last_name"],
+        include: [
+          {
+            model: Media,
+            as: "media",
+            where: { type: "profile" , current: true},
+            attributes: [ "url"],
+          },
+        ]
       },
     ];
     const { limit, page, filter, fields, orderby, id } = req.query;
