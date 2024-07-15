@@ -34,23 +34,51 @@ export const signin = async (req, res) => {
   try {
     const userData = req.body;
     const foundUser = await User.findOne({ where: { email: userData.email } });
-    if (foundUser) {
-      const passwordMatched = await bcrypt.compare(
-        userData.password,
-        foundUser.password
-      );
-      if (passwordMatched) {
-        const token = await jwt.sign({ id: foundUser.id }, secret);
-        res.status(200).json({ User, token });
-      } else {
-        res.status(400).json({ message: "wrong credientials" });
-      }
-    } else {
-      res.status(404).json({ message: "wrong credientials" });
+
+    if (!foundUser) {
+      return res.status(404).json({ message: "Invalid credentials" });
     }
+
+    const passwordMatched = await bcrypt.compare(
+      userData.password,
+      foundUser.password
+    );
+    if (!passwordMatched) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+    const accessToken = jwt.sign(
+      { id: foundUser.id },
+      process.env.ACCESS_TOKEN_SECRET,
+      { expiresIn: "15m" }
+    );
+    const refreshToken = jwt.sign(
+      { id: foundUser.id },
+      process.env.REFRESH_TOKEN_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    res.json({ user: foundUser, accessToken, refreshToken });
   } catch (error) {
-    res.status(404).json({ message: error.message });
+    res.status(400).json({ message: error.message });
   }
+};
+export const refreshAccessToken = async (req, res) => {
+  const refreshToken = req.body.refreshToken;
+  if (!refreshToken) {
+    return res.status(400).json({ message: "Missing refresh token" });
+  }
+  jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(403).json({ message: "Invalid refresh token" });
+    }
+    const userId = decoded.id;
+    const newAccessToken = jwt.sign(
+      { id: userId },
+      process.env.ACCESS_TOKEN_SECRET,
+      { expiresIn: "1h" }
+    );
+    res.json({ newAccessToken });
+  });
 };
 export const forgetOrResetPassword = async (req, res) => {
   try {
@@ -61,7 +89,7 @@ export const forgetOrResetPassword = async (req, res) => {
       res
         .status(400)
         .json({ message: "new password don't match confirm-newPassword" });
-        //change password
+      //change password
     } else if (currentPassword && newPassword && cNewPassword) {
       let currentPasswordMatchUserPassword = await bcrypt.compare(
         currentPassword,
