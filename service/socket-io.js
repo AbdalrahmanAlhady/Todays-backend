@@ -13,9 +13,6 @@ export async function connect() {
     let Socket = socket;
     socket.on("set-userID", async (user_id) => {
       if (user_id) {
-        console.log(
-          `user with id ${user_id} connected on socket id: ${socket.id}`
-        );
         await addUser(user_id, socket);
         disconnectUser(socket, user_id);
       }
@@ -32,11 +29,9 @@ async function addUser(user_id, socket) {
     { where: { id: user_id } }
   );
   socket.join("user" + user_id);
-
 }
 async function getOnlineFriendsAndNotifyThem(user_id, socket) {
   const currentUser = await User.findByPk(user_id, {
-    raw: true,
     attributes: [
       "id",
       "first_name",
@@ -49,10 +44,13 @@ async function getOnlineFriendsAndNotifyThem(user_id, socket) {
       {
         model: Media,
         as: "media",
-        where: { type: "profile" , current: true},
-        attributes: [ "url"],
+        where: {
+          [Op.and]: [{ current: true }, { for: "profile" }],
+        },
+        attributes: ["url", "for"],
+        required: false,
       },
-    ]
+    ],
   });
   //send to user a list of their online friends
   let userFriendships = await Friendship.findAll({
@@ -87,7 +85,6 @@ async function getOnlineFriendsAndNotifyThem(user_id, socket) {
         { online: true },
       ],
     },
-    raw: true,
     attributes: [
       "id",
       "first_name",
@@ -95,24 +92,24 @@ async function getOnlineFriendsAndNotifyThem(user_id, socket) {
       "online",
       "socket_id",
       "updatedAt",
-      
     ],
     include: [
       {
         model: Media,
         as: "media",
-        where: { type: "profile" , current: true},
-        attributes: [ "url"],
+        where: {
+          [Op.and]: [{ current: true }, { for: "profile" }],
+        },
+        attributes: ["url", "for"],
+        required: false,
       },
-    ]
+    ],
   });
 
   const mappedOnlineFriends = new Map(
     onlineFriends.map((user) => [user.id, user])
   );
-  console.log("mappedOnlineFriends", mappedOnlineFriends);
   onlineUserAndHisFriends.set(user_id, mappedOnlineFriends);
-
   // notify user about online friends
   io.sockets
     .in("user" + user_id)
@@ -132,8 +129,6 @@ async function getOnlineFriendsAndNotifyThem(user_id, socket) {
         ...onlineUserAndHisFriends.get(key).values(),
       ]);
   });
-  console.log("onlineUserAndHisFriends", onlineUserAndHisFriends);
-  console.log("--------------------------");
 }
 
 export async function notifyUserBySocket(
@@ -154,16 +149,18 @@ export async function notifyUserBySocket(
         {
           model: Media,
           as: "media",
-          where: { type: "profile" , current: true},
-          attributes: [ "url"],
+          where: {
+            [Op.and]: [{ current: true }, { for: "profile" }],
+          },
+          attributes: ["url", "for"],
+          required: false,
         },
-      ]
+      ],
     },
   ];
   let sender = await User.findByPk(sender_id);
-  let receiver = await User.findByPk(receiver_id);
   notificationMsg =
-    type === "friend_post"
+    type === "friend_post" || type === "friend_comment"
       ? `your friend ${sender.first_name} ${sender.last_name} ${notificationMsg}`
       : `${sender.first_name} ${sender.last_name} ${notificationMsg}`;
   let createdNotification = await Notification.create({
@@ -183,14 +180,14 @@ export async function notifyUserBySocket(
   }
 }
 export async function sendMessageBySocket(message, receiver_id) {
-  let receiver = await User.findByPk(receiver_id);
   io.sockets.in("user" + receiver_id).emit("message", message);
+}
+export async function seenMessage(message_id, sender_id) {
+
+  io.sockets.in("user" + sender_id).emit("seen-message", message_id);
 }
 export function disconnectUser(socket, user_id) {
   socket.on("disconnect", async (reason) => {
-    console.log(`user with id ${user_id} disconnected from socket`);
-    console.log("reason", reason);
-    console.log("disconnect", socket.id);
     if (reason === "io server disconnect") {
       // the disconnection was initiated by the server, you need to reconnect manually
       socket.connect();

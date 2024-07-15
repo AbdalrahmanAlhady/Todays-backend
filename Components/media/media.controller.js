@@ -56,7 +56,6 @@ export const getMedia = async (req, res) => {
 export const deleteMedia = async (req, res) => {
   try {
     const media = await Media.destroy({ where: { id: req.params.id } });
-    console.log(media);
     if (media) {
       res.status(200).json({ message: "deleted" });
     }

@@ -3,6 +3,7 @@ import Friendship from "../../DBs/models/friendship.model.js";
 import { notifyUserBySocket } from "../../service/socket-io.js";
 import parseOData from "odata-sequelize";
 import User from "../../DBs/models/user.model.js";
+import Notification from "../../DBs/models/notification.model.js";
 
 export const sendFriendRequest = async (req, res) => {
   try {
@@ -33,12 +34,12 @@ export const getFriendships = async (req, res) => {
       {
         model: User,
         as: "sender",
-        attributes: ["id","first_name", "last_name"],
+        attributes: ["id", "first_name", "last_name"],
       },
       {
         model: User,
         as: "receiver",
-        attributes: ["id",  "first_name", "last_name"],
+        attributes: ["id", "first_name", "last_name"],
       },
     ];
     if (req.params.user_id) {
@@ -91,6 +92,9 @@ export const updateFriendRequest = async (req, res) => {
         null,
         friendship.id
       );
+      await Notification.destroy({
+        where: { type: "friendship_request", friendship_id: friendship.id },
+      });
       res.status(200).json({ message: "accepted" });
     }
   } catch (error) {

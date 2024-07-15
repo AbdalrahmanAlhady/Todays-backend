@@ -1,3 +1,4 @@
+import { Op } from "sequelize";
 import Media from "../../DBs/models/media.model.js";
 import Notification from "../../DBs/models/notification.model.js";
 import User from "../../DBs/models/user.model.js";
@@ -13,10 +14,13 @@ export const getUserNotification = async (req, res) => {
           {
             model: Media,
             as: "media",
-            where: { type: "profile" , current: true},
-            attributes: [ "url"],
+            where: {
+              [Op.and]: [{ current: true }, { for: "profile" }],
+            },
+            attributes: ["url", "for"],
+            required: false,
           },
-        ]
+        ],
       },
     ];
     let notifications = await Notification.findAndCountAll({
@@ -35,7 +39,6 @@ export const UpdateNotification = async (req, res) => {
   try {
     const updatedNotification = await Notification.update(req.body, {
       where: { id: req.params.id },
-     returning:true
     });
     if (updatedNotification) {
       res.status(201).json({

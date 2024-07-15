@@ -10,6 +10,7 @@ export const CreateConversation = async (req, res) => {
     const { first_user_id, second_user_id } = req.params;
     const first_user = await User.findByPk(first_user_id);
     const second_user = await User.findByPk(second_user_id);
+    const initiator_id = first_user_id;
     const existingConversation = await Conversation.findOne({
       where: {
         [Op.or]: [
@@ -20,24 +21,33 @@ export const CreateConversation = async (req, res) => {
     });
     if (existingConversation) {
       const updatedConversation = await Conversation.update(
-        { online: true },
-        { where: { id: existingConversation.id }, plain: true }
+        initiator_id === first_user_id
+          ? { first_user_status: "active" }
+          : { second_user_status: "active" },
+        { where: { id: existingConversation.id } }
       );
-      console.log("updated", updatedConversation);
       res.status(200).json({
-        conversation: { ...existingConversation, first_user, second_user },
+        conversation: {
+          ...existingConversation.dataValues,
+          first_user,
+          second_user,
+        },
       });
       return;
     } else {
       const conversation = await Conversation.create({
         first_user_id,
         second_user_id,
-        ...req.body
+        ...req.body,
       });
       if (conversation) {
-        res
-          .status(201)
-          .json({ conversation: { ...conversation, first_user, second_user } });
+        res.status(201).json({
+          conversation: {
+            ...conversation.dataValues,
+            first_user,
+            second_user,
+          },
+        });
       }
     }
   } catch (error) {
@@ -50,28 +60,34 @@ export const getConversationsOfUser = async (req, res) => {
       {
         model: User,
         as: "first_user",
-        attributes: ["id",  "first_name", "last_name"],
+        attributes: ["id", "first_name", "last_name"],
         include: [
           {
             model: Media,
-            where: { type: "profile" , current: true},
             as: "media",
-            attributes: [ "url"],
+            where: {
+              [Op.and]: [{ current: true }, { for: "profile" }],
+            },
+            attributes: ["url", "for"],
+            required: false,
           },
-        ]
+        ],
       },
       {
         model: User,
         as: "second_user",
-        attributes: ["id",  "first_name", "last_name"],
+        attributes: ["id", "first_name", "last_name"],
         include: [
           {
             model: Media,
             as: "media",
-            where: { type: "profile" , current: true},
-            attributes: [ "url"],
+            where: {
+              [Op.and]: [{ current: true }, { for: "profile" }],
+            },
+            attributes: ["url", "for"],
+            required: false,
           },
-        ]
+        ],
       },
     ];
     const { limit, page, filter, fields, orderby, id } = req.query;
@@ -115,7 +131,6 @@ export const getConversationsOfUser = async (req, res) => {
       queryWithIncludables
     );
     if (conversations) {
-      console.log(conversations);
       res.status(200).json({ conversations });
     }
   } catch (error) {
@@ -124,12 +139,9 @@ export const getConversationsOfUser = async (req, res) => {
 };
 export const updateConversation = async (req, res) => {
   try {
-    const conversation = await Conversation.update(
-       req.body ,
-      {
-        where: { id: req.params.id },
-      }
-    );
+    const conversation = await Conversation.update(req.body, {
+      where: { id: req.params.id },
+    });
     if (conversation) {
       res.status(200).json({ message: "updated" });
     }

@@ -48,9 +48,15 @@ export const getPostById = async (req, res) => {
           {
             model: Media,
             as: "media",
-            where: { type: "profile" , current: true},
-            attributes: [ "url"],
-          },
+            where: {
+              [Op.and]: [
+                { current: true }, 
+                { for: "profile" },
+              ],
+            },
+            attributes: ["url", "for"],
+            required: false,
+          }
         ]
       },
       {
