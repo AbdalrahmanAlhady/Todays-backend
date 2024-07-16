@@ -28,8 +28,8 @@ export const sendFriendRequest = async (req, res) => {
 
 export const getFriendships = async (req, res) => {
   try {
-    const { limit, page, filter, fields, orderby } = req.query;
-    let query = "";
+    const { limit, page, filter, fields, orderby, id } = req.query;
+
     let includables = [
       {
         model: User,
@@ -42,32 +42,31 @@ export const getFriendships = async (req, res) => {
         attributes: ["id", "first_name", "last_name"],
       },
     ];
-    if (req.params.user_id) {
-      query =
-        query +
-        `$filter=sender_id eq ${req.params.user_id} or receiver_id eq ${req.params.user_id}&`;
+    let queryOptions = {
+      where: {},
+      order: [["createdAt", "DESC"]],
+      include: includables,
+    };
+    if (id) {
+      queryOptions.where.id = id;
     }
-    if (page && limit) {
-      query =
-        query + `$top=${limit * 1 || 100}&$skip=${(page - 1) * limit || 0}&`;
+    if (req.params.user_id) {
+      queryOptions.where[Op.or] = [
+        { sender_id: req.params.user_id },
+        { receiver_id: req.params.user_id },
+      ];
+    }
+    if (limit && page) {
+      queryOptions.offset = (page - 1) * limit;
+      queryOptions.limit = limit * 1;
     }
     if (fields) {
-      query = query + `$select=${fields}&`;
-    }
-    if (filter) {
-      query = query + `$filter=substringof('${filter.split(",")[2]}', body)&`;
+      queryOptions.attributes = [...fields.split(",")];
     }
     if (orderby) {
-      query =
-        query + `$orderby=${orderby.split(",")[0]} ${orderby.split(",")[1]}&`;
+      queryOptions.order.push([orderby.split(",")[0], orderby.split(",")[1]]);
     }
-    let queryWithIncludables = query
-      ? {
-          include: includables,
-          ...parseOData(query.slice(0, -1), Sequelize),
-        }
-      : { include: includables };
-    const friendships = await Friendship.findAndCountAll(queryWithIncludables);
+    const friendships = await Friendship.findAndCountAll(queryOptions);
     res.status(200).json({ friendships });
   } catch (error) {
     console.log(error);

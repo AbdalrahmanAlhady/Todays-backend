@@ -45,32 +45,27 @@ export const getMessagesOfConversation = async (req, res) => {
       },
     ];
     const { limit, page, filter, fields, orderby } = req.query;
-    let query = "";
-    if (page && limit) {
-      query =
-        query + `$top=${limit * 1 || 100}&$skip=${(page - 1) * limit || 0}&`;
+    let queryOptions = {
+      where: {},
+      order: [["createdAt", "DESC"]],
+      include: includables,
+    };
+    if (req.params.conversation_id) {
+      queryOptions.where.conversation_id = req.params.conversation_id
+    }
+    
+    if (limit && page) {
+      queryOptions.offset = (page - 1) * limit;
+      queryOptions.limit = limit * 1;
     }
     if (fields) {
-      query = query + `$select=${fields}&`;
-    }
-    if (filter) {
-      query = query + `$filter=substringof('${filter.split(",")[2]}', body)&`;
+      queryOptions.attributes = [...fields.split(",")];
     }
     if (orderby) {
-      query =
-        query + `$orderby=${orderby.split(",")[0]} ${orderby.split(",")[1]}&`;
+      queryOptions.order.push([orderby.split(",")[0], orderby.split(",")[1]]);
     }
-    if (req.params.conversation_id) {
-      query =
-        query + `$filter=conversation_id eq ${req.params.conversation_id}&`;
-    }
-    let queryWithIncludables = query
-      ? {
-          include: includables,
-          ...parseOData(query.slice(0, -1), Sequelize),
-        }
-      : { include: includables };
-    const messages = await Message.findAndCountAll(queryWithIncludables);
+   
+    const messages = await Message.findAndCountAll(queryOptions);
     if (messages) {
       res.status(200).json({ messages });
     }

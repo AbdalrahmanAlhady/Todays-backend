@@ -91,45 +91,31 @@ export const getConversationsOfUser = async (req, res) => {
       },
     ];
     const { limit, page, filter, fields, orderby, id } = req.query;
-    let query = "";
-    if (page && limit) {
-      query =
-        query + `$top=${limit * 1 || 100}&$skip=${(page - 1) * limit || 0}&`;
-    }
-    if (fields) {
-      query = query + `$select=${fields}&`;
-    }
-    if (filter) {
-      query = query + `$filter=substringof('${filter.split(",")[2]}', body)&`;
-    }
-    if (orderby) {
-      query =
-        query + `$orderby=${orderby.split(",")[0]} ${orderby.split(",")[1]}&`;
-    }
+    let queryOptions = {
+      where: {},
+      order: [["createdAt", "DESC"]],
+      include: includables,
+    };
     if (id) {
-      query = query + `$filter=id eq ${id}&`;
+      queryOptions.where.id = id;
     }
     if (req.params.user_id) {
-      if (query.includes("$filter")) {
-        query = query.replace(
-          "$filter=",
-          `$filter=(first_user_id eq ${req.params.user_id} or second_user_id eq ${req.params.user_id}) and`
-        );
-      } else {
-        query =
-          query +
-          `$filter=first_user_id eq ${req.params.user_id} or second_user_id eq ${req.params.user_id}&`;
-      }
+      queryOptions.where[Op.or] = [
+        { first_user_id: req.params.user_id },
+        { second_user_id: req.params.user_id },
+      ];
     }
-    let queryWithIncludables = query
-      ? {
-          include: includables,
-          ...parseOData(query.slice(0, -1), Sequelize),
-        }
-      : { include: includables };
-    const conversations = await Conversation.findAndCountAll(
-      queryWithIncludables
-    );
+    if (limit && page) {
+      queryOptions.offset = (page - 1) * limit;
+      queryOptions.limit = limit * 1;
+    }
+    if (fields) {
+      queryOptions.attributes = [...fields.split(",")];
+    }
+    if (orderby) {
+      queryOptions.order.push([orderby.split(",")[0], orderby.split(",")[1]]);
+    }
+    const conversations = await Conversation.findAndCountAll(queryOptions);
     if (conversations) {
       res.status(200).json({ conversations });
     }

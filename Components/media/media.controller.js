@@ -29,12 +29,17 @@ export const storeMedia = async (req, res) => {
 export const getMedia = async (req, res) => {
   try {
     const { limit, page, filter, fields, orderby, type } = req.query;
-
     let queryOptions = {
-      where: type
-        ? { owner_id: req.params.user_id, for: type }
-        : { owner_id: req.params.user_id, current: {[Op.or]:[false,null]} },
+      where: {},
+      order: [["createdAt", "DESC"]],
     };
+    if (type && req.params.user_id) {
+      queryOptions.where.owner_id = req.params.user_id;
+      queryOptions.where.for = type;
+    } else if (!type && req.params.user_id) {
+      queryOptions.where.owner_id = req.params.user_id;
+      queryOptions.where.current = { [Op.or]: [false, null] };
+    }
     if (limit && page) {
       queryOptions.offset = (page - 1) * limit;
       queryOptions.limit = limit * 1;
@@ -43,7 +48,7 @@ export const getMedia = async (req, res) => {
       queryOptions.attributes = [...fields.split(",")];
     }
     if (orderby) {
-      queryOptions.order = [orderby.split(",")[0], orderby.split(",")[1]];
+      queryOptions.order.push([orderby.split(",")[0], orderby.split(",")[1]]);
     }
     let media = await Media.findAndCountAll(queryOptions);
     res.status(200).json({ media });

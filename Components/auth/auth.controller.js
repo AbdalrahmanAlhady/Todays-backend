@@ -56,7 +56,8 @@ export const signin = async (req, res) => {
       process.env.REFRESH_TOKEN_SECRET,
       { expiresIn: "1d" }
     );
-
+    foundUser.online = true;
+    await foundUser.save();
     res.json({ user: foundUser, accessToken, refreshToken });
   } catch (error) {
     res.status(400).json({ message: error.message });

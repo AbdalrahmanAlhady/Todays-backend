@@ -23,10 +23,26 @@ export const getUserNotification = async (req, res) => {
         ],
       },
     ];
-    let notifications = await Notification.findAndCountAll({
-      where: { receiver_id: req.params.receiver_id },
+    const { limit, page, filter, fields, orderby } = req.query;
+    let queryOptions = {
+      where: {},
+      order: [["createdAt", "DESC"]],
       include: includables,
-    });
+    };
+    if (receiver_id) {
+      queryOptions.where.receiver_id = req.params.receiver_id
+    }
+    if (limit && page) {
+      queryOptions.offset = (page - 1) * limit;
+      queryOptions.limit = limit * 1;
+    }
+    if (fields) {
+      queryOptions.attributes = [...fields.split(",")];
+    }
+    if (orderby) {
+      queryOptions.order.push([orderby.split(",")[0], orderby.split(",")[1]]);
+    }
+    let notifications = await Notification.findAndCountAll(queryOptions);
     if (notifications) {
       res.status(201).json({ notifications });
     }

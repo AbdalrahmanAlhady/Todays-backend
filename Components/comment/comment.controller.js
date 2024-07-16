@@ -37,11 +37,11 @@ export const getComments = async (req, res) => {
         include: [
           {
             model: Media,
-            where: { type: "profile" , current: true},
+            where: { type: "profile", current: true },
             as: "media",
-            attributes: [ "url"],
+            attributes: ["url"],
           },
-        ]
+        ],
       },
       {
         model: Media,
@@ -50,31 +50,27 @@ export const getComments = async (req, res) => {
       },
     ];
     const { limit, page, filter, fields, orderby } = req.query;
-    let query = "";
-    if (page && limit) {
-      query =
-        query + `$top=${limit * 1 || 100}&$skip=${(page - 1) * limit || 0}&`;
+
+    let queryOptions = {
+      where: {},
+      order: [["createdAt", "DESC"]],
+      include: includables,
+    };
+    if (req.params.post_id) {
+      queryOptions.where.post_id = req.params.post_id;
+    }
+    if (limit && page) {
+      queryOptions.offset = (page - 1) * limit;
+      queryOptions.limit = limit * 1;
     }
     if (fields) {
-      query = query + `$select=${fields}&`;
-    }
-    if (filter) {
-      query = query + `$filter=substringof('${filter.split(",")[2]}', body)&`;
+      queryOptions.attributes = [...fields.split(",")];
     }
     if (orderby) {
-      query =
-        query + `$orderby=${orderby.split(",")[0]} ${orderby.split(",")[1]}&`;
+      queryOptions.order.push([orderby.split(",")[0], orderby.split(",")[1]]);
     }
-    if (req.params.post_id) {
-      query = query + `$filter=post_id eq ${req.params.post_id}&`;
-    }
-    let queryWithIncludables = query
-      ? {
-          include: includables,
-          ...parseOData(query.slice(0, -1), Sequelize),
-        }
-      : { include: includables };
-    const comments = await Comment.findAndCountAll(queryWithIncludables);
+
+    const comments = await Comment.findAndCountAll(queryOptions);
     res.status(200).json({ comments });
   } catch (error) {
     res.status(400).json({ message: error.message });

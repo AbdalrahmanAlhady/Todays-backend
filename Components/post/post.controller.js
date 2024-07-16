@@ -43,21 +43,18 @@ export const getPostById = async (req, res) => {
     let includables = [
       {
         model: User,
-        attributes: ["id",  "first_name", "last_name"],
+        attributes: ["id", "first_name", "last_name"],
         include: [
           {
             model: Media,
             as: "media",
             where: {
-              [Op.and]: [
-                { current: true }, 
-                { for: "profile" },
-              ],
+              [Op.and]: [{ current: true }, { for: "profile" }],
             },
             attributes: ["url", "for"],
             required: false,
-          }
-        ]
+          },
+        ],
       },
       {
         model: Media,
@@ -85,25 +82,21 @@ export const getPostById = async (req, res) => {
 export const getPosts = async (req, res) => {
   try {
     const { limit, page, filter, fields, orderby, user_id, id } = req.query;
-    let query = "";
     let includables = [
       {
         model: User,
-        attributes: ["id",  "first_name", "last_name"],
+        attributes: ["id", "first_name", "last_name"],
         include: [
           {
             model: Media,
             as: "media",
             where: {
-              [Op.and]: [
-                { current: true }, 
-                { for: "profile" },
-              ],
+              [Op.and]: [{ current: true }, { for: "profile" }],
             },
             attributes: ["url", "for"],
             required: false,
-          }
-        ]
+          },
+        ],
       },
       {
         model: Media,
@@ -117,41 +110,28 @@ export const getPosts = async (req, res) => {
         through: { model: PostLikes, attributes: [] },
       },
     ];
+    let queryOptions = {
+      where: {},
+      order: [["createdAt", "DESC"]],
+      include: includables,
+    };
     if (id) {
-      query = query + `$filter=id eq ${id}&`;
+      queryOptions.where.id = id;
     }
     if (user_id) {
-      if (query.includes("$filter")) {
-        query = query.replace(
-          "$filter=",
-          `$filter=owner_id eq ${user_id} and `
-        );
-      } else {
-        query = query + `$filter=owner_id eq ${user_id}&`;
-      }
+      queryOptions.where.owner_id = user_id;
     }
-    if (page && limit) {
-      query =
-        query + `$top=${limit * 1 || 100}&$skip=${(page - 1) * limit || 0}&`;
+    if (limit && page) {
+      queryOptions.offset = (page - 1) * limit;
+      queryOptions.limit = limit * 1;
     }
     if (fields) {
-      query = query + `$select=${fields}&`;
-    }
-    if (filter) {
-      query = query + `$filter=substringof('${filter.split(",")[2]}', body)&`;
+      queryOptions.attributes = [...fields.split(",")];
     }
     if (orderby) {
-      query =
-        query + `$orderby=${orderby.split(",")[0]} ${orderby.split(",")[1]}&`;
+      queryOptions.order.push([orderby.split(",")[0], orderby.split(",")[1]]);
     }
-
-    let queryWithIncludables = query
-      ? {
-          include: includables,
-          ...parseOData(query.slice(0, -1), Sequelize)
-        }
-      : { include: includables };
-    const posts = await Post.findAndCountAll(queryWithIncludables);
+    const posts = await Post.findAndCountAll(queryOptions);
     res.status(200).json({ posts });
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -161,10 +141,7 @@ export const getPosts = async (req, res) => {
 export const updatePost = async (req, res) => {
   try {
     const body = req.body.body;
-    const post = await Post.update(
-      { body },
-      { where: { id: req.params.id } }
-    );
+    const post = await Post.update({ body }, { where: { id: req.params.id } });
     res.status(200).json({ post });
   } catch (error) {
     res.status(400).json({ message: error.message });
