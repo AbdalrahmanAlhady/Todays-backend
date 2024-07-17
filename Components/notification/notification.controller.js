@@ -29,7 +29,7 @@ export const getUserNotification = async (req, res) => {
       order: [["createdAt", "DESC"]],
       include: includables,
     };
-    if (receiver_id) {
+    if (req.params.receiver_id) {
       queryOptions.where.receiver_id = req.params.receiver_id
     }
     if (limit && page) {
