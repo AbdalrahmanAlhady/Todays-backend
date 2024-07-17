@@ -10,7 +10,9 @@ export const sendMessage = async (req, res) => {
   try {
     const message = await Message.create(req.body);
     if (message) {
-      const conversation = await Conversation.findByPk(req.body.conversation_id);
+      const conversation = await Conversation.findByPk(
+        req.body.conversation_id
+      );
       if (conversation) {
         conversation.first_user_id === message.receiver_id
           ? (conversation.first_user_status = "active")
@@ -47,13 +49,13 @@ export const getMessagesOfConversation = async (req, res) => {
     const { limit, page, filter, fields, orderby } = req.query;
     let queryOptions = {
       where: {},
-      order: [["createdAt", "DESC"]],
+      order: [["createdAt", "ASC"]],
       include: includables,
     };
     if (req.params.conversation_id) {
-      queryOptions.where.conversation_id = req.params.conversation_id
+      queryOptions.where.conversation_id = req.params.conversation_id;
     }
-    
+
     if (limit && page) {
       queryOptions.offset = (page - 1) * limit;
       queryOptions.limit = limit * 1;
@@ -64,10 +66,23 @@ export const getMessagesOfConversation = async (req, res) => {
     if (orderby) {
       queryOptions.order.push([orderby.split(",")[0], orderby.split(",")[1]]);
     }
-   
+
     const messages = await Message.findAndCountAll(queryOptions);
     if (messages) {
       res.status(200).json({ messages });
+    }
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+    console.log(error.message);
+  }
+};
+export const countMessagesOfConversation = async (req, res) => {
+  try {
+    const messagesCount = await Message.count({
+      where: { conversation_id: req.params.conversation_id },
+    });
+    if (messagesCount) {
+      res.status(200).json({ messagesCount });
     }
   } catch (error) {
     res.status(400).json({ message: error.message });
