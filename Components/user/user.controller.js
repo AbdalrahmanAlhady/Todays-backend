@@ -53,8 +53,17 @@ export const updateUser = async (req, res) => {
         {
           model: Media,
           as: "media",
-          where: { type: "profile", current: true },
-          attributes: ["url"],
+          where: {
+            [Op.and]: [
+              { current: true },
+              { owner_id: req.params.id },
+              {
+                [Op.or]: [{ for: "profile" }, { for: "cover" }],
+              },
+            ],
+          },
+          attributes: ["url", "for"],
+          required: false,
         },
       ],
     });
