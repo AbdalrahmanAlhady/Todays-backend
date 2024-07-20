@@ -77,9 +77,12 @@ export const updateFriendRequest = async (req, res) => {
   try {
     //  receriver is the one who will accept request so he is sender now
     const { sender_id, receiver_id } = req.params;
-    const friendship = await Friendship.update(req.body, {
+    const updatedFriendship = await Friendship.update(req.body, {
       where: { sender_id, receiver_id },
     });
+    const friendship = await Friendship.findOne({
+      where: { sender_id, receiver_id },
+    })
     if (friendship) {
       // sender is  the recevier of the friend request so ids is
       await notifyUserBySocket(
@@ -91,10 +94,13 @@ export const updateFriendRequest = async (req, res) => {
         null,
         friendship.id
       );
-      await Notification.destroy({
+     const deletedNotification = await Notification.destroy({
         where: { type: "friendship_request", friendship_id: friendship.id },
       });
-      res.status(200).json({ message: "accepted" });
+      if (deletedNotification) {
+        
+        res.status(200).json({ message: "accepted" });
+      }
     }
   } catch (error) {
     res.status(400).json({ message: error.message });
