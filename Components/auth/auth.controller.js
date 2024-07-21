@@ -168,3 +168,13 @@ export const verifyEmail = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+export const signout = async (req, res) => {
+  try {
+    const foundUser = await User.findOne({ where: { id: req.params.id } });
+    foundUser.online = false;
+    await foundUser.save();
+    res.status(200).json({ message: "user signed out" });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
