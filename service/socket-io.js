@@ -161,8 +161,8 @@ export async function notifyUserBySocket(
   let sender = await User.findByPk(sender_id);
   notificationMsg =
     type === "friend_post" || type === "friend_comment"
-      ? `your friend ${sender.first_name} ${sender.last_name} ${notificationMsg}`
-      : `${sender.first_name} ${sender.last_name} ${notificationMsg}`;
+      ? `your friend <strong>${sender.first_name} ${sender.last_name}</strong> ${notificationMsg}`
+      : `<strong>${sender.first_name} ${sender.last_name}</strong> ${notificationMsg}`;
   let createdNotification = await Notification.create({
     message: notificationMsg,
     sender_id,
