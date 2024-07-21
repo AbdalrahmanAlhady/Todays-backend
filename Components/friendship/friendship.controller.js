@@ -1,9 +1,10 @@
-import { Sequelize, where } from "sequelize";
+import { Op, Sequelize, where } from "sequelize";
 import Friendship from "../../DBs/models/friendship.model.js";
 import { notifyUserBySocket } from "../../service/socket-io.js";
 import parseOData from "odata-sequelize";
 import User from "../../DBs/models/user.model.js";
 import Notification from "../../DBs/models/notification.model.js";
+import Media from "../../DBs/models/media.model.js";
 
 export const sendFriendRequest = async (req, res) => {
   try {
@@ -33,13 +34,35 @@ export const getFriendships = async (req, res) => {
     let includables = [
       {
         model: User,
-        as: "sender",
+        as: "receiver",
         attributes: ["id", "first_name", "last_name"],
+        include: [
+          {
+            model: Media,
+            as: "media",
+            where: {
+              [Op.and]: [{ current: true }, { for: "profile" }],
+            },
+            attributes: ["url", "for"],
+            required: false,
+          },
+        ],
       },
       {
         model: User,
-        as: "receiver",
+        as: "sender",
         attributes: ["id", "first_name", "last_name"],
+        include: [
+          {
+            model: Media,
+            as: "media",
+            where: {
+              [Op.and]: [{ current: true }, { for: "profile" }],
+            },
+            attributes: ["url", "for"],
+            required: false,
+          },
+        ],
       },
     ];
     let queryOptions = {
