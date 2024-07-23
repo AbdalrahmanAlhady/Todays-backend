@@ -130,7 +130,16 @@ export const deleteFriendRequest = async (req, res) => {
   try {
     const { sender_id, receiver_id } = req.params;
     const friendship = await Friendship.deleteOne({ sender_id, receiver_id });
-    if (friendship) res.status(200).json({ message: "friendship removed" });
+    await notifyUserBySocket(
+      "has declined your friend request",
+      receiver_id,
+      sender_id,
+      "friendship_accept",
+      null,
+      null,
+      friendship.id
+    );
+    if (friendship) res.status(200).json({ message: "declined" });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
