@@ -81,7 +81,7 @@ export const countMessagesOfConversation = async (req, res) => {
     const messagesCount = await Message.count({
       where: { conversation_id: req.params.conversation_id },
     });
-    if (messagesCount) {
+    if (messagesCount || messagesCount === 0) {
       res.status(200).json({ messagesCount });
     }
   } catch (error) {

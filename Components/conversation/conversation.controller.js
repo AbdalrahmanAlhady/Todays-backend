@@ -7,9 +7,29 @@ import Media from "../../DBs/models/media.model.js";
 
 export const CreateConversation = async (req, res) => {
   try {
+   const includables = [
+      {
+        model: Media,
+        as: "media",
+        where: {
+          [Op.and]: [
+            { current: true },
+            {
+              [Op.or]: [{ for: "profile" }, { for: "cover" }],
+            },
+          ],
+        },
+        attributes: ["url", "for"],
+        required: false,
+      },
+    ];
     const { first_user_id, second_user_id } = req.params;
-    const first_user = await User.findByPk(first_user_id);
-    const second_user = await User.findByPk(second_user_id);
+    const first_user = await User.findByPk(first_user_id, {
+      include: includables,
+    });
+    const second_user = await User.findByPk(second_user_id, {
+      include: includables,
+    });
     const initiator_id = first_user_id;
     const existingConversation = await Conversation.findOne({
       where: {

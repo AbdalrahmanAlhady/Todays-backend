@@ -117,13 +117,10 @@ export const updateFriendRequest = async (req, res) => {
         null,
         friendship.id
       );
-     const deletedNotification = await Notification.destroy({
+      const deletedNotification = await Notification.destroy({
         where: { type: "friendship_request", friendship_id: friendship.id },
       });
-      if (deletedNotification) {
-        
-        res.status(200).json({ message: "accepted" });
-      }
+      res.status(200).json({ message: "accepted" });
     }
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -142,7 +139,12 @@ export const checkFriendship = async (req, res) => {
   try {
     const { sender_id, receiver_id } = req.params;
     const friendship = await Friendship.findOne({
-      where: { sender_id, receiver_id },
+      where: {
+        [Op.or]: [
+          { sender_id, receiver_id },
+          { sender_id: receiver_id, receiver_id: sender_id },
+        ],
+      },
     });
     if (friendship) {
       res.status(201).json({ friendship_status: friendship.status });

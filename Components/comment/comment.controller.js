@@ -4,7 +4,7 @@ import Media from "../../DBs/models/media.model.js";
 import Post from "../../DBs/models/post.model.js";
 import User from "../../DBs/models/user.model.js";
 import { notifyUserBySocket } from "../../service/socket-io.js";
-import { Sequelize } from "sequelize";
+import { Op, Sequelize } from "sequelize";
 
 export const createComment = async (req, res) => {
   try {
@@ -37,17 +37,21 @@ export const getComments = async (req, res) => {
         include: [
           {
             model: Media,
-            where: { type: "profile", current: true },
             as: "media",
-            attributes: ["url"],
+            where: {
+              [Op.and]: [{ current: true }, { for: "profile" }],
+            },
+            attributes: ["url", "for"],
+            required: false,
           },
         ],
       },
       {
         model: Media,
         as: "media",
-        attributes: ["id", "url", "type"],
+        attributes: ["id", "url", "type", "dimensions"],
       },
+     
     ];
     const { limit, page, filter, fields, orderby } = req.query;
 
