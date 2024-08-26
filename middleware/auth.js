@@ -13,7 +13,7 @@ export const auth = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET);
-    const user = await User.findOne({ _id: decoded.id });
+    const user = await User.findOne({where:{ id: decoded.id }});
     if (user) {
       next();
     } else {
